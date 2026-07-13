@@ -179,6 +179,22 @@ function showBiddingPhase() {
   document.getElementById('roundEndSection').style.display = 'none';
   document.getElementById('trickDisplay').style.display = 'none';
 
+  // Show blind bidding message for round 1
+  const isRound1 = gameState.currentRound.number === 1;
+  let biddingMessage = document.getElementById('biddingMessage');
+  if (!biddingMessage) {
+    biddingMessage = document.createElement('div');
+    biddingMessage.id = 'biddingMessage';
+    document.getElementById('biddingSection').insertBefore(biddingMessage, document.getElementById('biddingSection').querySelector('h3').nextElementSibling);
+  }
+
+  if (isRound1) {
+    biddingMessage.innerHTML = '<p style="color: var(--gold); font-style: italic; text-align: center; margin-bottom: 20px;">Runde 1 - Blindgebot! Du siehst deine Karte erst nach dem Gebot.</p>';
+    biddingMessage.style.display = 'block';
+  } else {
+    biddingMessage.style.display = 'none';
+  }
+
   // Generate bid buttons
   const cardsPerPlayer = gameState.currentRound.cardsPerPlayer;
   const bidButtons = document.getElementById('bidButtons');
@@ -196,6 +212,13 @@ function showBiddingPhase() {
 function showBiddingComplete() {
   document.getElementById('biddingSection').style.display = 'none';
   document.getElementById('playingSection').style.display = 'block';
+
+  // Make sure hand section is visible
+  const handSection = document.getElementById('hand');
+  if (handSection) {
+    handSection.parentElement.style.display = 'block';
+  }
+
   document.getElementById('trickDisplay').style.display = 'block';
   updateTrickDisplay([]);
   updateTurnDisplay();
@@ -255,6 +278,11 @@ function submitBid() {
 function displayHand(hand) {
   const handDiv = document.getElementById('hand');
   handDiv.innerHTML = '';
+
+  // Don't display cards if in round 1 bidding phase
+  if (gameState && gameState.state === 'bidding' && gameState.currentRound.number === 1) {
+    return;
+  }
 
   hand.forEach((card, index) => {
     const cardEl = createCardElement(card, index);

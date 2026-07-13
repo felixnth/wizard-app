@@ -363,9 +363,12 @@ io.on('connection', (socket) => {
           trumpCard: game.currentRound.trumpCard
         });
 
-        // Send hand to each player
-        for (const player of game.players) {
-          io.to(player.id).emit('hand', player.hand);
+        // For round 1 (blind bidding): don't send hand yet
+        // For round 2+: send hand immediately
+        if (game.currentRound.number > 1) {
+          for (const player of game.players) {
+            io.to(player.id).emit('hand', player.hand);
+          }
         }
       }
     } else {
@@ -381,6 +384,12 @@ io.on('connection', (socket) => {
       io.to(gameId).emit('gameStateUpdated', game.getGameState());
 
       if (game.state === 'playing') {
+        // For round 1, send hands now (after bidding is complete)
+        if (game.currentRound.number === 1) {
+          for (const player of game.players) {
+            io.to(player.id).emit('hand', player.hand);
+          }
+        }
         io.to(gameId).emit('biddingComplete', { message: 'Bidding complete, playing phase started' });
       }
     }
@@ -424,8 +433,12 @@ io.on('connection', (socket) => {
           trumpCard: game.currentRound.trumpCard
         });
 
-        for (const player of game.players) {
-          io.to(player.id).emit('hand', player.hand);
+        // For round 1 (blind bidding): don't send hand yet
+        // For round 2+: send hand immediately
+        if (game.currentRound.number > 1) {
+          for (const player of game.players) {
+            io.to(player.id).emit('hand', player.hand);
+          }
         }
       } else {
         io.to(gameId).emit('gameEnded', {
