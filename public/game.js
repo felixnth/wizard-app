@@ -79,6 +79,10 @@ socket.on('gameStateUpdated', (state) => {
   gameState = state;
   updateGameUI();
   updateTurnDisplay();
+  // Refresh bidding UI when state changes (e.g. next player's turn to bid)
+  if (state.state === 'bidding' && document.getElementById('biddingSection')?.style.display === 'block') {
+    showBiddingPhase();
+  }
 
   // Update waiting players list if still in lobby
   const waitingList = document.getElementById('waitingPlayers');
@@ -226,6 +230,32 @@ function showBiddingPhase() {
     biddingMessage.style.display = 'none';
   }
 
+  // Is it my turn to bid?
+  const isMyBidTurn = gameState.currentRound.currentBiddingPlayer === myPlayerId;
+  const forbiddenBid = gameState.currentRound.forbiddenBid;
+
+  // Show who is currently bidding
+  const currentBiddingPlayer = gameState.players.find(
+    p => p.id === gameState.currentRound.currentBiddingPlayer
+  );
+  let turnInfo = document.getElementById('biddingTurnInfo');
+  if (!turnInfo) {
+    turnInfo = document.createElement('p');
+    turnInfo.id = 'biddingTurnInfo';
+    turnInfo.style.cssText = 'text-align:center; font-weight:bold; margin-bottom:15px;';
+    document.getElementById('biddingSection').appendChild(turnInfo);
+  }
+
+  if (isMyBidTurn) {
+    turnInfo.style.color = 'var(--success)';
+    turnInfo.textContent = '🎯 Du bist dran!';
+  } else {
+    turnInfo.style.color = 'var(--gold)';
+    turnInfo.textContent = currentBiddingPlayer
+      ? `⏳ ${currentBiddingPlayer.name} bietet...`
+      : 'Warte auf Gebot...';
+  }
+
   // Generate bid buttons
   const cardsPerPlayer = gameState.currentRound.cardsPerPlayer;
   const bidButtons = document.getElementById('bidButtons');
@@ -233,9 +263,13 @@ function showBiddingPhase() {
 
   for (let i = 0; i <= cardsPerPlayer; i++) {
     const btn = document.createElement('button');
-    btn.textContent = i;
+    const isForbidden = (forbiddenBid !== null && forbiddenBid !== undefined && i === forbiddenBid);
+    btn.textContent = isForbidden ? `${i} ✗` : i;
     btn.className = 'secondary';
-    btn.onclick = () => selectBid(i);
+    btn.disabled = !isMyBidTurn || isForbidden;
+    if (isForbidden) btn.style.opacity = '0.4';
+    if (!isMyBidTurn) btn.style.opacity = '0.5';
+    btn.onclick = () => { if (isMyBidTurn && !isForbidden) selectBid(i); };
     bidButtons.appendChild(btn);
   }
 }

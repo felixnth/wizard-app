@@ -107,6 +107,11 @@ class WizardGame {
     // Trump card
     const trumpCard = deckIndex < deck.length ? deck[deckIndex] : null;
 
+    // Dealer rotates each round: dealer = (roundNumber-1) % playerCount
+    // First player to bid/play = one after dealer
+    const dealerIndex = (this.roundNumber - 1) % this.players.length;
+    const roundStartIndex = this.roundNumber % this.players.length;
+
     this.currentRound = {
       number: this.roundNumber,
       cardsPerPlayer,
@@ -114,7 +119,9 @@ class WizardGame {
       trumpColor: trumpCard && trumpCard.type === 'card' ? trumpCard.color : null,
       playedCards: [],
       ledSuit: null,
-      currentPlayerIndex: 0,
+      currentPlayerIndex: roundStartIndex,
+      roundStartIndex,
+      dealerIndex,
       bidsEntered: 0,
       totalBidSum: 0
     };
@@ -123,21 +130,44 @@ class WizardGame {
     return true;
   }
 
+  getForbiddenBid() {
+    // Last bidder cannot bid an amount that makes total = cardsPerPlayer
+    if (this.currentRound.bidsEntered === this.players.length - 1) {
+      const forbidden = this.currentRound.cardsPerPlayer - this.currentRound.totalBidSum;
+      if (forbidden >= 0 && forbidden <= this.currentRound.cardsPerPlayer) {
+        return forbidden;
+      }
+    }
+    return null;
+  }
+
   setBid(playerId, bidAmount) {
     const player = this.players.find(p => p.id === playerId);
-    if (player && bidAmount >= 0 && bidAmount <= this.currentRound.cardsPerPlayer) {
-      player.bid = bidAmount;
-      this.currentRound.bidsEntered++;
-      this.currentRound.totalBidSum += bidAmount;
+    const currentPlayer = this.players[this.currentRound.currentPlayerIndex];
 
-      if (this.currentRound.bidsEntered === this.players.length) {
-        this.state = 'playing';
-        this.currentRound.playedCards = [];
-        this.currentRound.currentPlayerIndex = 0;
-      }
-      return true;
+    // Only the current bidding player can bid
+    if (!player || !currentPlayer || currentPlayer.id !== playerId) return false;
+    if (bidAmount < 0 || bidAmount > this.currentRound.cardsPerPlayer) return false;
+
+    // Last bidder restriction: cannot make total equal cardsPerPlayer
+    const forbidden = this.getForbiddenBid();
+    if (forbidden !== null && bidAmount === forbidden) return false;
+
+    player.bid = bidAmount;
+    this.currentRound.bidsEntered++;
+    this.currentRound.totalBidSum += bidAmount;
+
+    if (this.currentRound.bidsEntered === this.players.length) {
+      this.state = 'playing';
+      this.currentRound.playedCards = [];
+      // First trick starts with the round's start player
+      this.currentRound.currentPlayerIndex = this.currentRound.roundStartIndex;
+    } else {
+      // Advance to next bidding player
+      this.currentRound.currentPlayerIndex =
+        (this.currentRound.currentPlayerIndex + 1) % this.players.length;
     }
-    return false;
+    return true;
   }
 
   playCard(playerId, cardIndex) {
@@ -235,11 +265,15 @@ class WizardGame {
       }
     }
 
+    let trickWinnerPlayerIndex = this.currentRound.roundStartIndex; // fallback: round start player
+
     if (winnerIndex >= 0) {
       const winnerId = playedCards[winnerIndex].player;
       const winner = this.players.find(p => p.id === winnerId);
       if (winner) {
         winner.tricks++;
+        // Trick winner starts the next trick
+        trickWinnerPlayerIndex = this.players.findIndex(p => p.id === winnerId);
       }
     }
 
@@ -249,7 +283,8 @@ class WizardGame {
     } else {
       this.currentRound.playedCards = [];
       this.currentRound.ledSuit = null;
-      // currentPlayerIndex continues from where it left off
+      // Trick winner starts next trick
+      this.currentRound.currentPlayerIndex = trickWinnerPlayerIndex;
     }
   }
 
@@ -292,7 +327,11 @@ class WizardGame {
           playerId: pc.player,
           playerName: this.players.find(p => p.id === pc.player)?.name || 'Unknown',
           card: pc.card
-        }))
+        })),
+        forbiddenBid: this.state === 'bidding' ? this.getForbiddenBid() : null,
+        currentBiddingPlayer: this.state === 'bidding'
+          ? (this.players[this.currentRound.currentPlayerIndex]?.id || null)
+          : null
       } : null,
       scores: this.scores
     };
