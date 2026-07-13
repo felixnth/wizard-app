@@ -286,7 +286,14 @@ class WizardGame {
         totalScore: this.scores[p.id],
         handSize: p.hand.length
       })),
-      currentRound: this.currentRound,
+      currentRound: {
+        ...this.currentRound,
+        currentTrick: this.currentRound.playedCards.map(pc => ({
+          playerId: pc.player,
+          playerName: this.players.find(p => p.id === pc.player)?.name || 'Unknown',
+          card: pc.card
+        }))
+      },
       scores: this.scores
     };
   }
@@ -384,9 +391,13 @@ io.on('connection', (socket) => {
     const game = games.get(gameId);
 
     if (game && game.playCard(playerId, cardIndex)) {
+      // Send updated hand to the player who just played
+      const player = game.players.find(p => p.id === playerId);
+      io.to(playerId).emit('hand', player.hand);
+
       io.to(gameId).emit('cardPlayed', {
-        playerName: game.players.find(p => p.id === playerId).name,
-        card: game.players.find(p => p.id === playerId).playedCard
+        playerName: player.name,
+        card: player.playedCard
       });
 
       io.to(gameId).emit('gameStateUpdated', game.getGameState());

@@ -79,6 +79,11 @@ socket.on('gameStateUpdated', (state) => {
   gameState = state;
   updateGameUI();
   updateTurnDisplay();
+
+  // Update trick display if in playing state
+  if (gameState.state === 'playing' && gameState.currentRound?.currentTrick) {
+    updateTrickDisplay(gameState.currentRound.currentTrick);
+  }
 });
 
 socket.on('roundStarted', (data) => {
@@ -90,6 +95,12 @@ socket.on('roundStarted', (data) => {
   if (data.trumpCard) {
     const trumpStr = formatCard(data.trumpCard);
     document.getElementById('trumpDisplay').innerHTML = `<strong>Trumpf:</strong> ${trumpStr}`;
+  }
+
+  // Clear trick display for new round
+  const trickDiv = document.getElementById('trickDisplay');
+  if (trickDiv) {
+    trickDiv.innerHTML = '';
   }
 
   showGameScreen();
@@ -166,6 +177,7 @@ function showBiddingPhase() {
   document.getElementById('biddingSection').style.display = 'block';
   document.getElementById('playingSection').style.display = 'none';
   document.getElementById('roundEndSection').style.display = 'none';
+  document.getElementById('trickDisplay').style.display = 'none';
 
   // Generate bid buttons
   const cardsPerPlayer = gameState.currentRound.cardsPerPlayer;
@@ -184,6 +196,8 @@ function showBiddingPhase() {
 function showBiddingComplete() {
   document.getElementById('biddingSection').style.display = 'none';
   document.getElementById('playingSection').style.display = 'block';
+  document.getElementById('trickDisplay').style.display = 'block';
+  updateTrickDisplay([]);
   updateTurnDisplay();
 }
 
@@ -306,10 +320,53 @@ function updatePlayedCards() {
   // This would be updated by socket events
 }
 
+function updateTrickDisplay(currentTrick) {
+  const trickDiv = document.getElementById('trickDisplay');
+  if (!trickDiv) return;
+
+  trickDiv.innerHTML = '';
+
+  if (!currentTrick || currentTrick.length === 0) {
+    trickDiv.innerHTML = '<p style="text-align: center; color: var(--gold);">Tisch (leerer Stich)</p>';
+    return;
+  }
+
+  const title = document.createElement('p');
+  title.style.textAlign = 'center';
+  title.style.color = 'var(--gold)';
+  title.style.marginBottom = '15px';
+  title.style.fontWeight = 'bold';
+  title.textContent = `Tisch (${currentTrick.length}/${gameState.players.length} Karten)`;
+  trickDiv.appendChild(title);
+
+  const cardsContainer = document.createElement('div');
+  cardsContainer.className = 'trick-cards';
+
+  currentTrick.forEach(trick => {
+    const trickCardDiv = document.createElement('div');
+    trickCardDiv.className = 'trick-card-wrapper';
+
+    const cardEl = createCardElement(trick.card, 0);
+    cardEl.style.pointerEvents = 'none';
+    cardEl.style.cursor = 'default';
+
+    const playerLabel = document.createElement('p');
+    playerLabel.className = 'trick-player-name';
+    playerLabel.textContent = trick.playerName;
+
+    trickCardDiv.appendChild(cardEl);
+    trickCardDiv.appendChild(playerLabel);
+    cardsContainer.appendChild(trickCardDiv);
+  });
+
+  trickDiv.appendChild(cardsContainer);
+}
+
 function showRoundEnd() {
   document.getElementById('biddingSection').style.display = 'none';
   document.getElementById('playingSection').style.display = 'none';
   document.getElementById('roundEndSection').style.display = 'block';
+  document.getElementById('trickDisplay').style.display = 'none';
 
   // Display round scores
   const scoresBody = document.getElementById('roundScores');
@@ -336,6 +393,7 @@ function displayFinalScores(scores) {
   document.getElementById('biddingSection').style.display = 'none';
   document.getElementById('playingSection').style.display = 'none';
   document.getElementById('roundEndSection').style.display = 'none';
+  document.getElementById('trickDisplay').style.display = 'none';
   document.getElementById('gameEndSection').style.display = 'block';
 
   // Sort players by final score

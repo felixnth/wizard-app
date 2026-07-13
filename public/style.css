@@ -346,6 +346,33 @@ button.success {
   cursor: default;
 }
 
+/* Trick Display */
+.trick-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.trick-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.trick-player-name {
+  text-align: center;
+  color: var(--gold);
+  font-weight: 600;
+  font-size: 0.95em;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Status Messages */
 .status-message {
   padding: 15px;
@@ -493,6 +520,19 @@ button.success {
   .card {
     min-width: 70px;
     font-size: 0.8em;
+  }
+
+  .trick-cards {
+    gap: 10px;
+  }
+
+  .trick-card-wrapper .card {
+    min-width: 65px;
+  }
+
+  .trick-player-name {
+    font-size: 0.85em;
+    max-width: 80px;
   }
 
   .modal-content {
