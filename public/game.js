@@ -259,7 +259,6 @@ function showBiddingPhase() {
   }
 
   // Show blind bidding message for round 1
-  const isRound1 = gameState.currentRound.number === 1;
   let biddingMessage = document.getElementById('biddingMessage');
   if (!biddingMessage) {
     biddingMessage = document.createElement('div');
