@@ -4,6 +4,7 @@ let playerName = null;
 let currentGameId = null;
 let playerBid = null;
 let selectedCard = null;
+let myPlayerId = null;
 
 // Game mode toggle
 document.getElementById('gameMode')?.addEventListener('change', function() {
@@ -45,6 +46,7 @@ async function createGame() {
     document.getElementById('displayGameCode').textContent = currentGameId;
 
     // Join game
+    myPlayerId = socket.id;
     socket.emit('joinGame', { gameId: currentGameId, playerName });
   } catch (error) {
     showError('Fehler beim Erstellen des Spiels: ' + error.message);
@@ -64,6 +66,7 @@ function joinGame() {
   playerName = name;
 
   document.getElementById('joinGameForm').style.display = 'none';
+  myPlayerId = socket.id;
   socket.emit('joinGame', { gameId, playerName });
 }
 
@@ -75,6 +78,7 @@ function cancelGame() {
 socket.on('gameStateUpdated', (state) => {
   gameState = state;
   updateGameUI();
+  updateTurnDisplay();
 });
 
 socket.on('roundStarted', (data) => {
@@ -180,9 +184,34 @@ function showBiddingPhase() {
 function showBiddingComplete() {
   document.getElementById('biddingSection').style.display = 'none';
   document.getElementById('playingSection').style.display = 'block';
+  updateTurnDisplay();
+}
 
-  const currentPlayer = gameState.players[0]; // Placeholder
-  document.getElementById('playingStatus').textContent = 'Spiel läuft...';
+function isMyTurn() {
+  if (!gameState || !gameState.currentRound) return false;
+  if (gameState.state !== 'playing') return false;
+
+  const currentPlayerIndex = gameState.currentRound.currentPlayerIndex;
+  const currentPlayer = gameState.players[currentPlayerIndex];
+  return currentPlayer && currentPlayer.id === myPlayerId;
+}
+
+function updateTurnDisplay() {
+  if (!gameState || !gameState.currentRound) return;
+
+  const currentPlayerIndex = gameState.currentRound.currentPlayerIndex;
+  const currentPlayer = gameState.players[currentPlayerIndex];
+
+  let statusText = '';
+  if (isMyTurn()) {
+    statusText = '👉 Du bist dran! Wähle eine Karte...';
+  } else if (currentPlayer) {
+    statusText = `⏳ ${currentPlayer.name} spielt...`;
+  } else {
+    statusText = 'Spiel läuft...';
+  }
+
+  document.getElementById('playingStatus').textContent = statusText;
 }
 
 function selectBid(amount) {
@@ -255,6 +284,11 @@ function selectCard(index, element) {
 
   selectedCard = index;
   element.classList.add('selected');
+
+  // If it's my turn, play the card immediately (mobile-friendly)
+  if (isMyTurn()) {
+    setTimeout(() => playSelectedCard(), 300);
+  }
 }
 
 function playSelectedCard() {

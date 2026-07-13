@@ -146,6 +146,12 @@ class WizardGame {
       return false;
     }
 
+    // Check if it's this player's turn
+    const currentPlayer = this.players[this.currentRound.currentPlayerIndex];
+    if (currentPlayer.id !== playerId) {
+      return false; // Not this player's turn
+    }
+
     const card = player.hand[cardIndex];
 
     // Validate card play (must follow suit if possible)
@@ -167,6 +173,9 @@ class WizardGame {
     if (this.currentRound.playedCards.length === 1 && card.type === 'card') {
       this.currentRound.ledSuit = card.color;
     }
+
+    // Move to next player's turn
+    this.currentRound.currentPlayerIndex = (this.currentRound.currentPlayerIndex + 1) % this.players.length;
 
     // Check if trick is complete
     if (this.currentRound.playedCards.length === this.players.length) {
@@ -240,6 +249,7 @@ class WizardGame {
     } else {
       this.currentRound.playedCards = [];
       this.currentRound.ledSuit = null;
+      // currentPlayerIndex continues from where it left off
     }
   }
 
