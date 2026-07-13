@@ -84,6 +84,10 @@ socket.on('gameStateUpdated', (state) => {
   if (state.state === 'bidding' && document.getElementById('biddingSection')?.style.display === 'block') {
     showBiddingPhase();
   }
+  // Refresh hand display during playing to update playable/disabled state
+  if (state.state === 'playing' && myCurrentHand) {
+    displayHand(myCurrentHand);
+  }
 
   // Update waiting players list if still in lobby
   const waitingList = document.getElementById('waitingPlayers');
@@ -145,6 +149,10 @@ socket.on('roundEnded', (data) => {
 
 socket.on('gameEnded', (data) => {
   displayFinalScores(data.finalScores);
+});
+
+socket.on('invalidCard', (data) => {
+  showError(data.message || 'Ungültige Karte!');
 });
 
 socket.on('error', (data) => {
@@ -376,6 +384,20 @@ function submitBid() {
   document.getElementById('submitBidBtn').style.display = 'none';
 }
 
+function isCardPlayable(card) {
+  if (!gameState || gameState.state !== 'playing') return false;
+  const ledSuit = gameState.currentRound?.ledSuit;
+  // Wizard and Jester always playable
+  if (card.type === 'wizard' || card.type === 'jester') return true;
+  // No led suit yet → anything is playable
+  if (!ledSuit) return true;
+  // Have a card of led suit? Must play it
+  const myHand = myCurrentHand || [];
+  const hasSuitCard = myHand.some(c => c.type === 'card' && c.color === ledSuit);
+  if (!hasSuitCard) return true; // can play anything
+  return card.type === 'card' && card.color === ledSuit;
+}
+
 function displayHand(hand) {
   const handDiv = document.getElementById('hand');
   handDiv.innerHTML = '';
@@ -387,7 +409,19 @@ function displayHand(hand) {
 
   hand.forEach((card, index) => {
     const cardEl = createCardElement(card, index);
-    cardEl.onclick = () => selectCard(index, cardEl);
+    const playable = gameState?.state === 'playing' ? isCardPlayable(card) : true;
+    if (!playable) {
+      cardEl.classList.add('card-disabled');
+      cardEl.style.opacity = '0.35';
+      cardEl.style.cursor = 'not-allowed';
+    }
+    cardEl.onclick = () => {
+      if (!playable) {
+        showError('Du musst Farbe bekennen!');
+        return;
+      }
+      selectCard(index, cardEl);
+    };
     handDiv.appendChild(cardEl);
   });
 }

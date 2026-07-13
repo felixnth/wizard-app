@@ -189,9 +189,11 @@ class WizardGame {
       const hasSuitCard = player.hand.some(c =>
         c.type === 'card' && c.color === this.currentRound.ledSuit
       );
-      if (hasSuitCard && !(card.type === 'card' && card.color === this.currentRound.ledSuit)
-          && card.type !== 'wizard' && card.type !== 'jester') {
-        return false; // Must follow suit
+      // Wizard and Jester may always be played; otherwise must follow suit
+      if (hasSuitCard && card.type !== 'wizard' && card.type !== 'jester') {
+        if (!(card.type === 'card' && card.color === this.currentRound.ledSuit)) {
+          return 'mustFollowSuit';
+        }
       }
     }
 
@@ -199,8 +201,11 @@ class WizardGame {
     player.hand.splice(cardIndex, 1);
     this.currentRound.playedCards.push({ player: playerId, card });
 
-    // If first card, set led suit
-    if (this.currentRound.playedCards.length === 1 && card.type === 'card') {
+    // Set led suit:
+    // - Wizard as first card → no suit (ledSuit stays null)
+    // - Regular card → sets suit
+    // - Jester as first card → ledSuit stays null until first non-jester/non-wizard card
+    if (!this.currentRound.ledSuit && card.type === 'card') {
       this.currentRound.ledSuit = card.color;
     }
 
@@ -440,7 +445,13 @@ io.on('connection', (socket) => {
     const { gameId, cardIndex } = data;
     const game = games.get(gameId);
 
-    if (game && game.playCard(playerId, cardIndex)) {
+    if (!game) { socket.emit('error', { message: 'Spiel nicht gefunden' }); return; }
+    const playResult = game.playCard(playerId, cardIndex);
+    if (playResult === 'mustFollowSuit') {
+      socket.emit('invalidCard', { message: 'Du musst Farbe bekennen!' });
+      return;
+    }
+    if (playResult === true) {
       // Send updated hand to the player who just played
       const player = game.players.find(p => p.id === playerId);
       io.to(playerId).emit('hand', player.hand);
@@ -459,7 +470,7 @@ io.on('connection', (socket) => {
         });
       }
     }
-  });
+  }); // end playCard
 
   socket.on('nextRound', (data) => {
     const { gameId } = data;
