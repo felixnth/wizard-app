@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wizard - Kartenspiel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+  <div class="container">
+    <div class="wizard-header">
+      <h1>🧙 Wizard</h1>
+      <p>Österreichisches Kartenspiel</p>
+    </div>
+
+    <div class="mode-selection">
+      <div class="mode-card" onclick="goToScoreblock()">
+        <h2>📋 Punkteblock</h2>
+        <p>Digitales Punkteblatt</p>
+        <p class="subtitle">Spielleiter trägt Gebote und Stiche ein</p>
+      </div>
+
+      <div class="mode-card" onclick="goToGame()">
+        <h2>🎮 Volles Spiel</h2>
+        <p>Multiplayer Online</p>
+        <p class="subtitle">Jeder Spieler auf seinem Handy</p>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <h3>Spielregeln</h3>
+      <ul>
+        <li><strong>Spieler:</strong> 3-6 Spieler</li>
+        <li><strong>Kartenanzahl:</strong> 60 Karten (4 Farben 1-13, 4 Narren, 4 Zauberer)</li>
+        <li><strong>Runden:</strong> 60 ÷ Spieleranzahl</li>
+        <li><strong>Scoring:</strong> Gebot erfüllt: 20 + (10 × Stiche) | Gebot nicht erfüllt: -10 × |Gebot - Stiche|</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    function goToScoreblock() {
+      window.location.href = '/scoreblock';
+    }
+
+    function goToGame() {
+      window.location.href = '/game';
+    }
+  </script>
+</body>
+</html>

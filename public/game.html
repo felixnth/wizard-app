@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wizard - Volles Spiel</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="dark-theme">
+  <div class="container">
+    <div class="wizard-header">
+      <h1>🎮 Wizard - Volles Spiel</h1>
+    </div>
+
+    <!-- Setup Screen -->
+    <div id="setupScreen">
+      <div style="background: rgba(31, 58, 95, 0.5); border-radius: 12px; padding: 30px; max-width: 500px; margin: 0 auto;">
+        <h2 style="color: var(--gold); margin-bottom: 20px;">Spiel erstellen oder beitreten</h2>
+
+        <div id="joinGameForm">
+          <div class="form-group">
+            <label for="playerName">Dein Name:</label>
+            <input type="text" id="playerName" placeholder="Name eingeben" />
+          </div>
+
+          <div class="form-group">
+            <label for="gameMode">Spielmodus:</label>
+            <select id="gameMode">
+              <option value="create">Neues Spiel erstellen</option>
+              <option value="join">Spiel beitreten</option>
+            </select>
+          </div>
+
+          <div id="createGameDiv">
+            <div class="form-group">
+              <label for="playerCount">Anzahl Spieler (3-6):</label>
+              <select id="playerCount">
+                <option value="3">3</option>
+                <option value="4" selected>4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+              </select>
+            </div>
+            <button onclick="createGame()" style="width: 100%; margin-bottom: 10px;">Spiel erstellen</button>
+          </div>
+
+          <div id="joinGameDiv" style="display: none;">
+            <div class="form-group">
+              <label for="gameId">Spiel-Code:</label>
+              <input type="text" id="gameId" placeholder="z.B. ABC123" />
+            </div>
+            <button onclick="joinGame()" style="width: 100%; margin-bottom: 10px;">Spiel beitreten</button>
+          </div>
+
+          <a href="/" class="button" style="display: block; text-align: center;">← Zurück</a>
+        </div>
+
+        <div id="gameCodeDisplay" style="display: none; text-align: center;">
+          <p style="margin-bottom: 15px;">Spiel erstellt! Spiel-Code:</p>
+          <div style="background: var(--purple); padding: 20px; border-radius: 8px; margin-bottom: 20px; font-size: 1.8em; font-weight: bold; letter-spacing: 3px;" id="displayGameCode"></div>
+          <p style="color: var(--gold); margin-bottom: 20px;">Warte auf Spieler...</p>
+          <div id="waitingPlayers" class="player-list"></div>
+          <button class="secondary" onclick="cancelGame()">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+          <h2>Runde <span id="roundNum">1</span> / <span id="totalRounds">15</span></h2>
+          <p id="cardsPerRound" style="color: var(--gold);">Karten: 1</p>
+        </div>
+        <div style="text-align: right;">
+          <p id="gameState" style="color: var(--gold); font-weight: bold;">Wartet...</p>
+          <p id="trumpDisplay"></p>
+        </div>
+      </div>
+
+      <div id="playersSection">
+        <h3 style="color: var(--gold); margin-bottom: 15px;">Spieler und Gebote</h3>
+        <ul id="playersList" class="player-list"></ul>
+      </div>
+
+      <!-- Bidding Phase -->
+      <div id="biddingSection" style="display: none; margin: 30px 0; background: rgba(31, 58, 95, 0.5); border-radius: 12px; padding: 20px;">
+        <h3 style="color: var(--gold); margin-bottom: 15px;">Gebot abgeben</h3>
+        <div class="form-group">
+          <label>Wie viele Stiche gewinnst du?</label>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(50px, 1fr)); gap: 10px; margin: 15px 0;">
+            <div id="bidButtons"></div>
+          </div>
+        </div>
+        <button id="submitBidBtn" onclick="submitBid()" style="width: 100%; display: none;">Gebot abgeben</button>
+      </div>
+
+      <!-- Playing Phase -->
+      <div id="playingSection" style="display: none; margin: 30px 0;">
+        <h3 style="color: var(--gold); margin-bottom: 15px;">Deine Hand</h3>
+        <div class="hand-display" id="hand"></div>
+        <p id="playingStatus" style="text-align: center; color: var(--gold); margin-top: 20px;"></p>
+        <div id="playedCards" style="margin-top: 20px;"></div>
+      </div>
+
+      <!-- Round End -->
+      <div id="roundEndSection" style="display: none; margin: 30px 0; background: rgba(81, 207, 102, 0.1); border-radius: 12px; padding: 20px;">
+        <h3 style="color: var(--success); margin-bottom: 15px;">Runde beendet</h3>
+        <table class="score-table">
+          <thead>
+            <tr>
+              <th>Spieler</th>
+              <th>Gebot</th>
+              <th>Stiche</th>
+              <th>Punkte</th>
+            </tr>
+          </thead>
+          <tbody id="roundScores"></tbody>
+        </table>
+        <button id="nextRoundBtn" onclick="nextRound()" style="width: 100%; margin-top: 20px;">Nächste Runde →</button>
+      </div>
+
+      <!-- Game End -->
+      <div id="gameEndSection" style="display: none; margin: 30px 0; background: rgba(81, 207, 102, 0.1); border-radius: 12px; padding: 30px; text-align: center;">
+        <h2 style="color: var(--gold); margin-bottom: 20px;">🏆 Spiel beendet!</h2>
+        <table class="score-table">
+          <thead>
+            <tr>
+              <th>Spieler</th>
+              <th>Endergebnis</th>
+            </tr>
+          </thead>
+          <tbody id="finalScores"></tbody>
+        </table>
+        <button onclick="goHome()" style="margin-top: 20px;">Neues Spiel</button>
+      </div>
+    </div>
+
+    <!-- Error Display -->
+    <div id="errorMessage" class="status-message error" style="display: none; margin-top: 20px;"></div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

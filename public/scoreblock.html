@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wizard - Punkteblock</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+  <div class="container">
+    <div class="wizard-header">
+      <h1>📋 Wizard Punkteblock</h1>
+    </div>
+
+    <div id="setupScreen">
+      <div style="background: rgba(31, 58, 95, 0.5); border-radius: 12px; padding: 30px; max-width: 500px; margin: 0 auto;">
+        <h2 style="color: var(--gold); margin-bottom: 20px;">Spieler eintragen</h2>
+
+        <div class="form-group">
+          <label for="playerCount">Anzahl Spieler (3-6):</label>
+          <select id="playerCount" onchange="updatePlayerInputs()">
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
+        </div>
+
+        <div id="playerInputs"></div>
+
+        <button onclick="startGame()" style="width: 100%; margin-top: 30px;">Spiel starten</button>
+        <a href="/" class="button" style="display: block; text-align: center; margin-top: 10px;">← Zurück</a>
+      </div>
+    </div>
+
+    <div id="gameScreen" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>Runde <span id="roundNumber">1</span> / <span id="totalRounds">15</span></h2>
+        <span id="roundCards" style="background: var(--purple); padding: 8px 16px; border-radius: 6px;">Karten: 1</span>
+      </div>
+
+      <table class="score-table">
+        <thead>
+          <tr>
+            <th>Spieler</th>
+            <th>Gebot</th>
+            <th>Stiche</th>
+            <th>Punkte</th>
+            <th>Gesamt</th>
+          </tr>
+        </thead>
+        <tbody id="playerRows">
+        </tbody>
+      </table>
+
+      <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center;">
+        <button id="nextRoundBtn" onclick="nextRound()">Nächste Runde →</button>
+        <button class="secondary" onclick="goHome()">Beenden</button>
+      </div>
+
+      <div id="gameEndScreen" style="display: none; margin-top: 30px;">
+        <div style="background: rgba(81, 207, 102, 0.1); border: 2px solid var(--success); border-radius: 12px; padding: 30px; text-align: center;">
+          <h2 style="color: var(--gold); margin-bottom: 20px;">🏆 Spiel beendet!</h2>
+          <table class="score-table">
+            <thead>
+              <tr>
+                <th>Spieler</th>
+                <th>Endergebnis</th>
+              </tr>
+            </thead>
+            <tbody id="finalScores">
+            </tbody>
+          </table>
+          <button onclick="goHome()" style="margin-top: 20px;">Neues Spiel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="scoreblock.js"></script>
+</body>
+</html>
