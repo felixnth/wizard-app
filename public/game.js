@@ -118,6 +118,10 @@ socket.on('roundStarted', (data) => {
 
 socket.on('hand', (hand) => {
   displayHand(hand);
+  // If we're in bidding phase (round 2+), also show hand preview
+  if (gameState && gameState.state === 'bidding' && gameState.currentRound && gameState.currentRound.number > 1) {
+    showHandPreview(hand);
+  }
 });
 
 socket.on('biddingComplete', () => {
@@ -182,11 +186,29 @@ function showGameScreen() {
   document.getElementById('gameScreen').style.display = 'block';
 }
 
+function showHandPreview(hand) {
+  const preview = document.getElementById('handPreview');
+  const previewCards = document.getElementById('handPreviewCards');
+  if (!preview || !previewCards) return;
+  previewCards.innerHTML = '';
+  hand.forEach(card => {
+    const cardEl = document.createElement('div');
+    cardEl.className = 'card';
+    cardEl.textContent = formatCard(card);
+    cardEl.style.cursor = 'default';
+    previewCards.appendChild(cardEl);
+  });
+  preview.style.display = 'block';
+}
+
 function showBiddingPhase() {
   document.getElementById('biddingSection').style.display = 'block';
   document.getElementById('playingSection').style.display = 'none';
   document.getElementById('roundEndSection').style.display = 'none';
   document.getElementById('trickDisplay').style.display = 'none';
+  // Hide hand preview initially (shown later when hand event arrives for round 2+)
+  const handPreview = document.getElementById('handPreview');
+  if (handPreview) handPreview.style.display = 'none';
 
   // Show blind bidding message for round 1
   const isRound1 = gameState.currentRound.number === 1;

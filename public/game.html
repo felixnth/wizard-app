@@ -94,6 +94,12 @@
           </div>
         </div>
         <button id="submitBidBtn" onclick="submitBid()" style="width: 100%; display: none;">Gebot abgeben</button>
+
+        <!-- Hand preview during bidding (round 2+) -->
+        <div id="handPreview" style="display: none; margin-top: 20px;">
+          <p style="color: var(--gold); margin-bottom: 10px;">Deine Karten:</p>
+          <div class="hand-display" id="handPreviewCards"></div>
+        </div>
       </div>
 
       <!-- Trick Display -->
