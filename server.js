@@ -286,14 +286,14 @@ class WizardGame {
         totalScore: this.scores[p.id],
         handSize: p.hand.length
       })),
-      currentRound: {
+      currentRound: this.currentRound ? {
         ...this.currentRound,
         currentTrick: this.currentRound.playedCards.map(pc => ({
           playerId: pc.player,
           playerName: this.players.find(p => p.id === pc.player)?.name || 'Unknown',
           card: pc.card
         }))
-      },
+      } : null,
       scores: this.scores
     };
   }

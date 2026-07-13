@@ -80,6 +80,14 @@ socket.on('gameStateUpdated', (state) => {
   updateGameUI();
   updateTurnDisplay();
 
+  // Update waiting players list if still in lobby
+  const waitingList = document.getElementById('waitingPlayers');
+  if (waitingList && state.state === 'waiting') {
+    waitingList.innerHTML = state.players.map(p =>
+      `<li class="player-item"><span class="player-name">✅ ${p.name}</span></li>`
+    ).join('');
+  }
+
   // Update trick display if in playing state
   if (gameState.state === 'playing' && gameState.currentRound?.currentTrick) {
     updateTrickDisplay(gameState.currentRound.currentTrick);
@@ -87,6 +95,7 @@ socket.on('gameStateUpdated', (state) => {
 });
 
 socket.on('roundStarted', (data) => {
+  if (!gameState) return;
   const totalRounds = Math.floor(60 / gameState.players.length);
   document.getElementById('roundNum').textContent = data.round;
   document.getElementById('totalRounds').textContent = totalRounds;
