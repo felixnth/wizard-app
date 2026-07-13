@@ -319,7 +319,9 @@ class WizardGame {
         tricks: p.tricks,
         roundScore: p.roundScore,
         totalScore: this.scores[p.id],
-        handSize: p.hand.length
+        handSize: p.hand.length,
+        // In round 1 bidding: expose all hands so players can see each other's card (not their own)
+        hand: (this.state === 'bidding' && this.roundNumber === 1) ? p.hand : undefined
       })),
       currentRound: this.currentRound ? {
         ...this.currentRound,

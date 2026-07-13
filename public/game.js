@@ -5,6 +5,7 @@ let currentGameId = null;
 let playerBid = null;
 let selectedCard = null;
 let myPlayerId = null;
+let myCurrentHand = null; // store received hand so it survives gameStateUpdated refreshes
 
 // Game mode toggle
 document.getElementById('gameMode')?.addEventListener('change', function() {
@@ -100,6 +101,7 @@ socket.on('gameStateUpdated', (state) => {
 
 socket.on('roundStarted', (data) => {
   if (!gameState) return;
+  myCurrentHand = null; // reset hand for new round
   const totalRounds = Math.floor(60 / gameState.players.length);
   document.getElementById('roundNum').textContent = data.round;
   document.getElementById('totalRounds').textContent = totalRounds;
@@ -121,8 +123,9 @@ socket.on('roundStarted', (data) => {
 });
 
 socket.on('hand', (hand) => {
+  myCurrentHand = hand;
   displayHand(hand);
-  // If we're in bidding phase (round 2+), also show hand preview
+  // If we're in bidding phase (round 2+), show hand preview
   if (gameState && gameState.state === 'bidding' && gameState.currentRound && gameState.currentRound.number > 1) {
     showHandPreview(hand);
   }
@@ -210,9 +213,42 @@ function showBiddingPhase() {
   document.getElementById('playingSection').style.display = 'none';
   document.getElementById('roundEndSection').style.display = 'none';
   document.getElementById('trickDisplay').style.display = 'none';
-  // Hide hand preview initially (shown later when hand event arrives for round 2+)
+
+  // Hand preview: show own cards in round 2+ if already received
   const handPreview = document.getElementById('handPreview');
-  if (handPreview) handPreview.style.display = 'none';
+  const isRound1 = gameState.currentRound.number === 1;
+  if (handPreview) {
+    if (!isRound1 && myCurrentHand) {
+      showHandPreview(myCurrentHand);
+    } else {
+      handPreview.style.display = 'none';
+    }
+  }
+
+  // Round 1: show OTHER players' cards (blind bidding — can't see own, can see others)
+  let othersSection = document.getElementById('othersCards');
+  if (isRound1) {
+    if (!othersSection) {
+      othersSection = document.createElement('div');
+      othersSection.id = 'othersCards';
+      othersSection.style.cssText = 'margin-top:20px;';
+      document.getElementById('biddingSection').appendChild(othersSection);
+    }
+    const others = (gameState.players || []).filter(p => p.id !== myPlayerId && p.hand && p.hand.length > 0);
+    if (others.length > 0) {
+      othersSection.innerHTML = `<p style="color:var(--gold);margin-bottom:10px;">Karten der anderen:</p>` +
+        others.map(p =>
+          `<div style="margin-bottom:8px;"><span style="color:#aaa;">${p.name}:</span> ` +
+          p.hand.map(c => `<span class="card" style="display:inline-block;margin:2px;cursor:default;">${formatCard(c)}</span>`).join('') +
+          `</div>`
+        ).join('');
+      othersSection.style.display = 'block';
+    } else {
+      othersSection.style.display = 'none';
+    }
+  } else if (othersSection) {
+    othersSection.style.display = 'none';
+  }
 
   // Show blind bidding message for round 1
   const isRound1 = gameState.currentRound.number === 1;
